@@ -1,3 +1,5 @@
+// src/App.js
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import Room from './components/Room';
@@ -5,34 +7,48 @@ import FirstPersonControls from './components/FirstPersonControls';
 import ShootingHandler from './components/ShootingHandler';
 import Target from './components/Target';
 import Projectile from './components/Projectile';
-import './App.css'; 
+import { generateMaze, ROOM_SIZE } from './utils/MazeGenerator';
+import './App.css';
 
-const ROOM_SIZE = 10;
-
-const generateRandomPosition = (roomPosition) => {
-  const x = (Math.random() - 0.5) * ROOM_SIZE + roomPosition[0];
-  const y = -1; // 
-  const z = (Math.random() - 0.5) * ROOM_SIZE + roomPosition[2];
-  return [x, y, z];
-};
+const MAZE_WIDTH = 10;
+const MAZE_HEIGHT = 10;
 
 const generateTargets = (roomPosition) => {
-  const targetCount = Math.floor(Math.random() * 5) + 1;
+  const targetCount = Math.floor(Math.random() * 3) + 1;
   const targets = [];
   for (let i = 0; i < targetCount; i++) {
-    targets.push(generateRandomPosition(roomPosition));
+    const x = (Math.random() - 0.5) * ROOM_SIZE + roomPosition[0];
+    const y = -1;
+    const z = (Math.random() - 0.5) * ROOM_SIZE + roomPosition[2];
+    targets.push([x, y, z]);
   }
   return targets;
 };
 
-function App() {
-  const [rooms, setRooms] = useState([{ position: [0, 0, 0], targets: generateTargets([0, 0, 0]) }]);
+const App = () => {
+  const [rooms, setRooms] = useState([]);
   const [projectiles, setProjectiles] = useState([]);
-  const [kills, setKills] = useState(0); // État pour le compteur de kills
-  const [audioPlayed, setAudioPlayed] = useState(false); // État pour savoir si l'audio a été joué
+  const [kills, setKills] = useState(0);
+  const [audioPlayed, setAudioPlayed] = useState(false);
   const controlsRef = useRef();
   const targetRefs = useRef([]);
-  const audioRef = useRef(null); // Référence pour l'audio
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const maze = generateMaze(MAZE_WIDTH, MAZE_HEIGHT);
+    const newRooms = [];
+
+    for (let z = 0; z < MAZE_HEIGHT; z++) {
+      for (let x = 0; x < MAZE_WIDTH; x++) {
+        if (maze[z][x] === 0) {
+          const position = [x * ROOM_SIZE, 0, z * ROOM_SIZE];
+          newRooms.push({ position, targets: generateTargets(position), x, y: z });
+        }
+      }
+    }
+
+    setRooms(newRooms);
+  }, []);
 
   const handleKeyDown = (event) => {
     if (!controlsRef.current) return;
@@ -86,41 +102,6 @@ function App() {
     ]);
   }, []);
 
-  const checkDoorCollision = (camera) => {
-    const { x, z } = camera.position;
-    rooms.forEach((room) => {
-      const { position } = room;
-      const [roomX, roomY, roomZ] = position;
-
-      if (x > roomX - ROOM_SIZE / 2 && x < roomX + ROOM_SIZE / 2 && z > roomZ - ROOM_SIZE / 2 && z < roomZ + ROOM_SIZE / 2) {
-        if (x > roomX - 1 && x < roomX + 1 && z > roomZ - ROOM_SIZE / 2 - 0.1 && z < roomZ - ROOM_SIZE / 2 + 0.1) {
-          generateNewRoom([roomX, roomY, roomZ - ROOM_SIZE]);
-        }
-        if (x > roomX - 1 && x < roomX + 1 && z > roomZ + ROOM_SIZE / 2 - 0.1 && z < roomZ + ROOM_SIZE / 2 + 0.1) {
-          generateNewRoom([roomX, roomY, roomZ + ROOM_SIZE]);
-        }
-        if (z > roomZ - 1 && z < roomZ + 1 && x > roomX - ROOM_SIZE / 2 - 0.1 && x < roomX - ROOM_SIZE / 2 + 0.1) {
-          generateNewRoom([roomX - ROOM_SIZE, roomY, roomZ]);
-        }
-        if (z > roomZ - 1 && z < roomZ + 1 && x > roomX + ROOM_SIZE / 2 - 0.1 && x < roomX + ROOM_SIZE / 2 + 0.1) {
-          generateNewRoom([roomX + ROOM_SIZE, roomY, roomZ]);
-        }
-      }
-    });
-  };
-
-  const generateNewRoom = (position) => {
-    const newRoom = { position, targets: generateTargets(position) };
-    setRooms((prevRooms) => {
-      // Vérifier si la pièce existe déjà pour éviter les duplications
-      const roomExists = prevRooms.some(room => room.position[0] === position[0] && room.position[2] === position[2]);
-      if (!roomExists) {
-        return [...prevRooms, newRoom];
-      }
-      return prevRooms;
-    });
-  };
-
   const handleProjectileHit = useCallback((projectile) => {
     setProjectiles((prevProjectiles) => prevProjectiles.filter((p) => p.id !== projectile.id));
   }, []);
@@ -128,7 +109,7 @@ function App() {
   const handleTargetHit = useCallback((target) => {
     if (target && target.userData && target.userData.onHit) {
       target.userData.onHit();
-      setKills((prevKills) => prevKills + 1); // Incrémente le compteur de kills uniquement lorsque la cible est touchée
+      setKills((prevKills) => prevKills + 1);
     }
   }, []);
 
@@ -139,7 +120,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    targetRefs.current = []; 
+    targetRefs.current = [];
   }, [rooms]);
 
   return (
@@ -149,7 +130,7 @@ function App() {
         <pointLight position={[10, 10, 10]} />
         {rooms.map((room, index) => (
           <React.Fragment key={index}>
-            <Room position={room.position} />
+            <Room position={room.position} maze={rooms.map(r => r.targets)} x={room.x} y={room.y} />
             {room.targets.map((targetPosition, targetIndex) => (
               <Target key={targetIndex} position={targetPosition} ref={addTargetRef} />
             ))}
@@ -168,7 +149,7 @@ function App() {
             targets={targetRefs.current}
           />
         ))}
-        <FirstPersonControls ref={controlsRef} onUpdate={(camera) => checkDoorCollision(camera)} />
+        <FirstPersonControls ref={controlsRef} />
         <ShootingHandler onShoot={handleShoot} />
       </Canvas>
       <div className="crosshair">
@@ -181,6 +162,6 @@ function App() {
       </div>
     </div>
   );
-}
+};
 
 export default App;
