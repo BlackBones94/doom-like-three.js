@@ -7,6 +7,7 @@ import FirstPersonControls from './components/FirstPersonControls';
 import ShootingHandler from './components/ShootingHandler';
 import Target from './components/Target';
 import Projectile from './components/Projectile';
+import CollisionHandler from './components/CollisionHandler';
 import { generateMaze, ROOM_SIZE } from './utils/MazeGenerator';
 import './App.css';
 
@@ -27,27 +28,39 @@ const generateTargets = (roomPosition) => {
 
 const App = () => {
   const [rooms, setRooms] = useState([]);
+  const [initialPosition, setInitialPosition] = useState([0, 0.1, 0]); // Adjust height here
   const [projectiles, setProjectiles] = useState([]);
   const [kills, setKills] = useState(0);
   const [audioPlayed, setAudioPlayed] = useState(false);
   const controlsRef = useRef();
   const targetRefs = useRef([]);
+  const wallsRef = useRef([]);
+  const doorsRef = useRef([]);
   const audioRef = useRef(null);
 
+  const maze = useRef([]);
+
   useEffect(() => {
-    const maze = generateMaze(MAZE_WIDTH, MAZE_HEIGHT);
+    maze.current = generateMaze(MAZE_WIDTH, MAZE_HEIGHT);
     const newRooms = [];
+    let startX = 0;
+    let startZ = 0;
 
     for (let z = 0; z < MAZE_HEIGHT; z++) {
       for (let x = 0; x < MAZE_WIDTH; x++) {
-        if (maze[z][x].isRoom) {
+        if (maze.current[z][x].isRoom) {
           const position = [x * ROOM_SIZE, 0, z * ROOM_SIZE];
-          newRooms.push({ position, targets: generateTargets(position), x, y: z, doors: maze[z][x].doors });
+          newRooms.push({ position, targets: generateTargets(position), x, y: z, doors: maze.current[z][x].doors });
+          if (startX === 0 && startZ === 0) {
+            startX = x * ROOM_SIZE;
+            startZ = z * ROOM_SIZE;
+          }
         }
       }
     }
 
     setRooms(newRooms);
+    setInitialPosition([startX, 0.1, startZ]); // Adjust height here
   }, []);
 
   const handleKeyDown = (event) => {
@@ -125,12 +138,12 @@ const App = () => {
 
   return (
     <div style={{ height: '100vh', overflow: 'hidden' }}>
-      <Canvas>
+      <Canvas camera={{ position: initialPosition }}>
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
         {rooms.map((room, index) => (
           <React.Fragment key={index}>
-            <Room position={room.position} doors={room.doors} />
+            <Room position={room.position} doors={room.doors} wallsRef={wallsRef} doorsRef={doorsRef} />
             {room.targets.map((targetPosition, targetIndex) => (
               <Target key={targetIndex} position={targetPosition} ref={addTargetRef} />
             ))}
@@ -151,6 +164,7 @@ const App = () => {
         ))}
         <FirstPersonControls ref={controlsRef} />
         <ShootingHandler onShoot={handleShoot} />
+        <CollisionHandler wallsRef={wallsRef} doorsRef={doorsRef} controlsRef={controlsRef} maze={maze.current} roomSize={ROOM_SIZE} />
       </Canvas>
       <div className="crosshair">
         <div className="crosshair-line vertical"></div>
