@@ -4,7 +4,10 @@ const ROOM_SIZE = 10;
 
 function generateMaze(width, height) {
   const maze = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => 1)
+    Array.from({ length: width }, () => ({
+      isRoom: false,
+      doors: { top: false, bottom: false, left: false, right: false },
+    }))
   );
 
   function divide(x, y, w, h, orientation) {
@@ -21,7 +24,7 @@ function generateMaze(width, height) {
 
     for (let i = 0; i < length; i++) {
       if (wx !== px || wy !== py) {
-        maze[wy][wx] = 0;
+        maze[wy][wx].isRoom = true;
       }
       wx += dx;
       wy += dy;
@@ -51,17 +54,32 @@ function generateMaze(width, height) {
   }
 
   divide(0, 0, width, height, chooseOrientation(width, height));
+
+  // Add doors between adjacent rooms
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (maze[y][x].isRoom) {
+        if (x > 0 && maze[y][x - 1].isRoom) {
+          maze[y][x].doors.left = true;
+          maze[y][x - 1].doors.right = true;
+        }
+        if (x < width - 1 && maze[y][x + 1].isRoom) {
+          maze[y][x].doors.right = true;
+          maze[y][x + 1].doors.left = true;
+        }
+        if (y > 0 && maze[y - 1][x].isRoom) {
+          maze[y][x].doors.top = true;
+          maze[y - 1][x].doors.bottom = true;
+        }
+        if (y < height - 1 && maze[y + 1][x].isRoom) {
+          maze[y][x].doors.bottom = true;
+          maze[y + 1][x].doors.top = true;
+        }
+      }
+    }
+  }
+
   return maze;
 }
 
-function hasAdjacentRoom(maze, x, y) {
-  const height = maze.length;
-  const width = maze[0].length;
-  if (x > 0 && maze[y][x - 1] === 0) return true;
-  if (x < width - 1 && maze[y][x + 1] === 0) return true;
-  if (y > 0 && maze[y - 1][x] === 0) return true;
-  if (y < height - 1 && maze[y + 1][x] === 0) return true;
-  return false;
-}
-
-export { generateMaze, hasAdjacentRoom, ROOM_SIZE };
+export { generateMaze, ROOM_SIZE };

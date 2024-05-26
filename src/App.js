@@ -40,9 +40,9 @@ const App = () => {
 
     for (let z = 0; z < MAZE_HEIGHT; z++) {
       for (let x = 0; x < MAZE_WIDTH; x++) {
-        if (maze[z][x] === 0) {
+        if (maze[z][x].isRoom) {
           const position = [x * ROOM_SIZE, 0, z * ROOM_SIZE];
-          newRooms.push({ position, targets: generateTargets(position), x, y: z });
+          newRooms.push({ position, targets: generateTargets(position), x, y: z, doors: maze[z][x].doors });
         }
       }
     }
@@ -130,7 +130,7 @@ const App = () => {
         <pointLight position={[10, 10, 10]} />
         {rooms.map((room, index) => (
           <React.Fragment key={index}>
-            <Room position={room.position} maze={rooms.map(r => r.targets)} x={room.x} y={room.y} />
+            <Room position={room.position} doors={room.doors} />
             {room.targets.map((targetPosition, targetIndex) => (
               <Target key={targetIndex} position={targetPosition} ref={addTargetRef} />
             ))}

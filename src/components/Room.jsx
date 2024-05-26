@@ -1,9 +1,9 @@
 // src/components/Room.jsx
 import React from 'react';
 import * as THREE from 'three';
-import { hasAdjacentRoom, ROOM_SIZE } from '../utils/MazeGenerator';
+import { ROOM_SIZE } from '../utils/MazeGenerator';
 
-function Room({ position, maze, x, y }) {
+function Room({ position, doors }) {
   const width = ROOM_SIZE;
   const height = 3;
   const depth = ROOM_SIZE;
@@ -23,22 +23,22 @@ function Room({ position, maze, x, y }) {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, height / 2, 0]} geometry={floorGeometry} material={floorMaterial} />
       
       <mesh position={[0, 0, -depth / 2]} geometry={wallGeometry} material={wallMaterial} />
-      {hasAdjacentRoom(maze, x, y - 1) && (
+      {doors.top && (
         <mesh position={[0, -height / 4, -depth / 2 + 0.01]} geometry={doorGeometry} material={doorMaterial} />
       )}
 
       <mesh rotation={[0, Math.PI, 0]} position={[0, 0, depth / 2]} geometry={wallGeometry} material={wallMaterial} />
-      {hasAdjacentRoom(maze, x, y + 1) && (
+      {doors.bottom && (
         <mesh rotation={[0, Math.PI, 0]} position={[0, -height / 4, depth / 2 - 0.01]} geometry={doorGeometry} material={doorMaterial} />
       )}
 
       <mesh rotation={[0, Math.PI / 2, 0]} position={[-width / 2, 0, 0]} geometry={wallSideGeometry} material={wallMaterial} />
-      {hasAdjacentRoom(maze, x - 1, y) && (
+      {doors.left && (
         <mesh rotation={[0, Math.PI / 2, 0]} position={[-width / 2 + 0.01, -height / 4, 0]} geometry={doorGeometry} material={doorMaterial} />
       )}
 
       <mesh rotation={[0, -Math.PI / 2, 0]} position={[width / 2, 0, 0]} geometry={wallSideGeometry} material={wallMaterial} />
-      {hasAdjacentRoom(maze, x + 1, y) && (
+      {doors.right && (
         <mesh rotation={[0, -Math.PI / 2, 0]} position={[width / 2 - 0.01, -height / 4, 0]} geometry={doorGeometry} material={doorMaterial} />
       )}
     </group>
