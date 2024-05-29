@@ -1,6 +1,7 @@
 // src/App.js
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
+import * as THREE from 'three'; // Importer THREE
 import Room from './components/Room';
 import FirstPersonControls from './components/FirstPersonControls';
 import ShootingHandler from './components/ShootingHandler';
@@ -85,8 +86,29 @@ const App = () => {
       case 'KeyD':
         moveRight(0.1);
         break;
+      case 'KeyE':
+        handleDoorInteraction();
+        break;
       default:
         break;
+    }
+  };
+
+  const handleDoorInteraction = () => {
+    if (!controlsRef.current) return;
+    const camera = controlsRef.current.camera;
+    const raycaster = new THREE.Raycaster();
+    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    raycaster.set(camera.position, direction);
+    const intersects = raycaster.intersectObjects(doorsRef.current, true);
+
+    if (intersects.length > 0 && intersects[0].distance < 1) {
+      const door = intersects[0].object;
+      if (door.userData.isOpen) {
+        door.userData.onClose();
+      } else {
+        door.userData.onOpen();
+      }
     }
   };
 
@@ -173,7 +195,7 @@ const App = () => {
         ))}
         <FirstPersonControls ref={controlsRef} />
         <ShootingHandler onShoot={handleShoot} />
-        <CollisionHandler wallsRef={wallsRef} doorsRef={doorsRef} controlsRef={controlsRef} maze={maze.current} roomSize={ROOM_SIZE} />
+        <CollisionHandler wallsRef={wallsRef} doorsRef={doorsRef} controlsRef={controlsRef} />
       </Canvas>
       <div className="crosshair">
         <div className="crosshair-line vertical"></div>
@@ -181,8 +203,8 @@ const App = () => {
       </div>
       <audio ref={audioRef} src="/doom.mp3" loop />
       <HUD ammo={ammo} health={health} armor={armor} kills={kills} />
-      <Weapon isShooting={isShooting} /> {/* Add Weapon component */}
-      <AudioPlayer isShooting={isShooting} /> {/* Add AudioPlayer component */}
+      <Weapon isShooting={isShooting} />
+      <AudioPlayer isShooting={isShooting} />
     </div>
   );
 };
