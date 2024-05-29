@@ -1,0 +1,14 @@
+/* src/styles/Weapon.css */
+.weapon {
+  position: absolute;
+  bottom: 20%;
+  
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none; /* Prevent mouse events on the weapon */
+}
+
+.weapon-img {
+  width: 800px; /* Ajustez la taille selon vos besoins */
+  height: auto;
+}

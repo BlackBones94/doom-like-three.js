@@ -1,5 +1,4 @@
 // src/App.js
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import Room from './components/Room';
@@ -8,7 +7,10 @@ import ShootingHandler from './components/ShootingHandler';
 import Target from './components/Target';
 import Projectile from './components/Projectile';
 import CollisionHandler from './components/CollisionHandler';
+import Weapon from './components/Weapon';
+import AudioPlayer from './components/AudioPlayer';
 import { generateMaze, ROOM_SIZE } from './utils/MazeGenerator';
+import HUD from './components/HUD';
 import './App.css';
 
 const MAZE_WIDTH = 10;
@@ -31,7 +33,11 @@ const App = () => {
   const [initialPosition, setInitialPosition] = useState([0, 0.1, 0]); // Adjust height here
   const [projectiles, setProjectiles] = useState([]);
   const [kills, setKills] = useState(0);
+  const [ammo, setAmmo] = useState(50);
+  const [health, setHealth] = useState(100);
+  const [armor, setArmor] = useState(100);
   const [audioPlayed, setAudioPlayed] = useState(false);
+  const [isShooting, setIsShooting] = useState(false); // Add shooting state
   const controlsRef = useRef();
   const targetRefs = useRef([]);
   const wallsRef = useRef([]);
@@ -113,6 +119,9 @@ const App = () => {
       ...prevProjectiles,
       { id: Date.now(), startPosition, direction, speed: 10 },
     ]);
+    setAmmo((prevAmmo) => prevAmmo - 1);
+    setIsShooting(true); // Set shooting state to true
+    setTimeout(() => setIsShooting(false), 400); // Reset shooting state after animation
   }, []);
 
   const handleProjectileHit = useCallback((projectile) => {
@@ -171,9 +180,9 @@ const App = () => {
         <div className="crosshair-line horizontal"></div>
       </div>
       <audio ref={audioRef} src="/doom.mp3" loop />
-      <div className="kills-counter">
-        Kills: {kills}
-      </div>
+      <HUD ammo={ammo} health={health} armor={armor} kills={kills} />
+      <Weapon isShooting={isShooting} /> {/* Add Weapon component */}
+      <AudioPlayer isShooting={isShooting} /> {/* Add AudioPlayer component */}
     </div>
   );
 };
